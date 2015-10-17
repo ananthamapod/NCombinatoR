@@ -1,23 +1,48 @@
 /*
  * Name: NCombinatoR
- * Description: Computes indices for the set of combinations when given the size of the list of outcomes,
+ * Description: Computes indices for the set of combinations when given the size of the full set of outcomes
    and the number of items of interest
  * Arguments:
-      n - size of the list of outcomes
+      n - size of the set of outcomes
       r - number of items of interest
- * Return: array of combinations
+      outcomes - OPTIONAL: an array of size n containing the full set of outcomes
+ * Return:
+      JSON Object {
+        err - error if any
+        data - array of combinations
+      }
+    Only err or data is set at a given time. If an error occurs, the data is never populated.
  */
 
-function NCombinatoR(n, r) {
-  //check for incorrect arguments
-  if(!isInt(n) || !isInt(r)) {
-    return [];
+function NCombinatoR(n, r, outcomes) {
+  //marks which set corresponding to the combinations needs to be populated, either the set of indices or the set of objects
+  var hasOutcomes = true;
+
+  if(typeof outcomes === 'undefined') {
+    hasOutcomes = false;
   }
 
   //utility to check if argument is an integer
-  var isInt = function(n) {
-    return parseInt(n) === n;
+  var isIntGT0 = function(n) {
+    if(parseInt(n) === n) {
+      return n > 0;
+    }
+    return false;
   };
+
+  //checks for invalid arguments
+  if(!isIntGT0(n) || !isIntGT0(r)) {
+    return {'err' : 'Invalid number arguments. n and r must be integers greater than or equal to 0.'};
+  }
+  if(n < r) {
+    return {'err': 'Invalid number arguments. In order for a valid set of combinations, the number of chosen outcomes r cannot be larger than the size of the full set of outcomes n.'};
+  }
+  if(r === 0) {
+    return {"data" : []};
+  }
+  if(hasOutcomes && (typeof outcomes !== 'object' || outcomes.length !== n)) {
+    return {'err' : 'Invalid third argument. Must be an array of possible outcomes of size n. n was supplied as ' + n + '.'};
+  }
 
   //inner function for heavy lifting
   var comb = function(indices) {
@@ -59,11 +84,16 @@ function NCombinatoR(n, r) {
       }
     }
     return ret;
+  };
+
+  //start off the recursion by calling comb with no arguments
+  var combinations = comb();
+  if(hasOutcomes) {
+    combinations  = combinations.map(function(elem, ind, arr) {
+      return elem.map(function (element, index, array) {
+        return outcomes[element];
+      });
+    });
   }
-
-  return comb([]);
+  return {'data' : combinations};
 }
-
-var combs = NCombinatoR("",1);
-console.log(combs);
-console.log(combs.length);
